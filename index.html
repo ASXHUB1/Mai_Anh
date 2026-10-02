@@ -17,7 +17,7 @@
 </style>
 </head>
 <body>
-<canvas id="c" role="img" aria-label="Bó hoa hồng đỏ phát sáng, trái tim quay quanh, chữ I Love You Mai Anh và mạng nhện trái tim tương tác"></canvas>
+<canvas id="c" role="img" aria-label="Bó hoa hồng đỏ phát sáng, trái tim quay quanh, chữ I Love ... và mạng nhện trái tim tương tác"></canvas>
 
 <!-- Giao diện bảng nhập mật khẩu -->
 <div id="pwdModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(16, 5, 5, 0.85); z-index:10; justify-content:center; align-items:center; flex-direction:column; font-family:'Segoe UI', Tahoma, sans-serif; backdrop-filter: blur(4px);">
@@ -194,9 +194,6 @@ const VALID_HASHES = [
     "3e7cdbb613532c510db23de8bfda928cdb1a6cd1e9d8e578c7fb104b281f62c5", // 9311
     "3bd6960cb812543d3b76cf6db0f934dfb7c2cc46f140d347206d8cc0dc9beff6"  // 090311
 ];
-
-// Chữ "MAI ANH" đã được mã hóa AES (chuẩn quân sự) bằng các mật khẩu trên. 
-// Chỉ khi nhập đúng mật khẩu thì code mới gỡ mã được. Kẻ gian có mở code lên cũng chỉ thấy đống rác này:
 const ENCRYPTED_PAYLOADS = {
     "3f33cc767b2d2db73b1ffb79bfcb0321fb9d1b06f79fa552d458be5b6e409ec8": "U2FsdGVkX18mZ99oT6Hw/p4d1aGk3H+z7jI8eWvG46I=",
     "e9ccf067d934bb610f4dc7cf6c9dbfb70a09e0fa9560f64c67ebfc3e46c98dc4": "U2FsdGVkX18LqGvBwFp0z3aG+fG1J8P+wJ3pS/0G30U=",
@@ -241,7 +238,7 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
         // Lấy payload mã hóa tương ứng và dùng chính mật khẩu người dùng vừa nhập để giải mã
         const encryptedData = ENCRYPTED_PAYLOADS[userHash];
         const bytes = CryptoJS.AES.decrypt(encryptedData, userInput);
-        secretName = bytes.toString(CryptoJS.enc.Utf8); // Trả về "MAI ANH"
+        secretName = bytes.toString(CryptoJS.enc.Utf8);
 
         // Xóa dấu vết lỗi nếu có
         localStorage.setItem('loveLetterFails', 0);
