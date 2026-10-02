@@ -177,11 +177,17 @@ const tc=document.createElement('canvas');let tw=0,th=0;
 
 let isUnlocked = false; 
 let modalShown = false;
-const SECRET_PASS = "09032011"; // <-- BẠN THAY ĐỔI MẬT KHẨU Ở DÒNG NÀY (VD: "25082005")
+
+// Đặt nhiều mật khẩu vào trong mảng, cách nhau bởi dấu phẩy
+// Bạn có thể sửa, thêm hoặc bớt mật khẩu trong ngoặc vuông []
+const VALID_PASSWORDS = ["09032011", "932011", "9311","090311"]; 
 
 // Xử lý sự kiện nút bấm trong bảng thông báo
 document.getElementById('btnSubmit').addEventListener('click', () => {
-    if(document.getElementById('pwdInput').value === SECRET_PASS) {
+    const userInput = document.getElementById('pwdInput').value;
+    
+    // Hàm .includes() sẽ kiểm tra xem chữ nhập vào có khớp với 1 trong các mật khẩu ở trên không
+    if(VALID_PASSWORDS.includes(userInput)) {
         isUnlocked = true;
         document.getElementById('pwdModal').style.display = 'none';
         buildText(); 
