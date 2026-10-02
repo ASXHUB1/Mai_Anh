@@ -169,10 +169,14 @@ function buildText(){
   x.shadowColor='rgba(255,30,40,.95)';x.shadowBlur=.22*U;
   for(let i=0;i<2;i++){x.font=`bold ${.55*U}px ${f}`;x.fillStyle=g1;x.fillText('I LOVE YOU',tw/2,l1);
     x.font=`900 ${.95*U}px ${f}`;x.fillStyle=g2;x.fillText('MAI ANH',tw/2,l2)}}
+
 function text(t){
   const a=sm((t-1.5)/1);if(a<=0)return;
   const s=1+.03*Math.sin(t*3); // Vẫn giữ nhịp thở (to nhỏ nhẹ) của chữ
-  const ty=Math.min(OY+2.6*U0,H-1.15*U0);
+  
+  const touchy=matchMedia('(pointer:coarse)').matches;
+  const textOffset = touchy ? 2.6 : 3.6; // Đẩy chữ xuống thấp trên PC, di động giữ nguyên
+  const ty=Math.min(OY+textOffset*U0,H-1.15*U0);
   
   // Tính toán vị trí gốc
   let cx=OX+(W/2-OX)*ZM;
@@ -192,9 +196,11 @@ function text(t){
 }
 
 /* ---------- mạng nhện trái tim + tương tác chạm/chuột ---------- */
-let mx=-1e3,my=-1e3,sx=-1e3,sy=-1e3,hov=false,aid=null;
-const NH=[],MAX=360,NEAR=[],MAXD=230,PD=95;let ni=0;
 const touchy=matchMedia('(pointer:coarse)').matches;
+let mx=-1e3,my=-1e3,sx=-1e3,sy=-1e3,hov=false,aid=null;
+const NH=[],NEAR=[],MAXD=230,PD=95;let ni=0;
+let MAX = touchy ? 60 : 360; // Chỉ giữ 60 trái tim trên mobile chống lag, PC vẫn 360
+
 function spawn(x,y,n){for(let i=0;i<n;i++){const a=rg(0,T2),s=rg(2,5.5),p={x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,tx:rg(-.3,.3),ty:rg(-.55,-.1),s:rg(7,14),ph:rg(0,T2),a:rg(.6,.95),c:(R()*3)|0,b:curT};
   if(NH.length<MAX)NH.push(p);else{NH[ni]=p;ni=(ni+1)%MAX}}}
 let lx=0,ly=0,mv=0,d0=1,z0=1;const ptrs=new Map();
@@ -269,7 +275,12 @@ function size(){
   U0=100*Math.min(W/540,H/480);U=U0*ZM;OX=W/2+.16*U0;OY=H/2;
   bx=0;by=0;bw=W;bh=H;bc.width=bw*dpr|0;bc.height=bh*dpr|0;bq=bc.getContext('2d');bqT=-1;
   buildText();
-  if(!NH.length)for(let i=0;i<90;i++)NH.push({x:rg(0,W),y:rg(0,H),vx:rg(-.3,.3),vy:rg(-.4,-.05),tx:rg(-.3,.3),ty:rg(-.5,-.08),s:rg(5,10),ph:rg(0,T2),a:rg(.4,.8),c:(R()*3)|0,b:-9});
+  
+  if(!NH.length){
+    let initCount = touchy ? 20 : 90; // Giảm số trái tim mồi lúc khởi động trên mobile
+    for(let i=0;i<initCount;i++)NH.push({x:rg(0,W),y:rg(0,H),vx:rg(-.3,.3),vy:rg(-.4,-.05),tx:rg(-.3,.3),ty:rg(-.5,-.08),s:rg(5,10),ph:rg(0,T2),a:rg(.4,.8),c:(R()*3)|0,b:-9});
+  }
+  
   if(still)draw(now(),0,0)}
 let rt;const onRs=()=>{clearTimeout(rt);rt=setTimeout(size,120)};
 addEventListener('resize',onRs);addEventListener('orientationchange',()=>{clearTimeout(rt);rt=setTimeout(size,300)});
