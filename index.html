@@ -169,10 +169,27 @@ function buildText(){
   x.shadowColor='rgba(255,30,40,.95)';x.shadowBlur=.22*U;
   for(let i=0;i<2;i++){x.font=`bold ${.55*U}px ${f}`;x.fillStyle=g1;x.fillText('I LOVE YOU',tw/2,l1);
     x.font=`900 ${.95*U}px ${f}`;x.fillStyle=g2;x.fillText('MAI ANH',tw/2,l2)}}
-function text(t){const a=sm((t-1.5)/1);if(a<=0)return;const c=Math.cos(YAW);if(Math.abs(c)<.03)return;
-  const s=1+.03*Math.sin(t*3),ty=Math.min(OY+2.6*U0,H-1.15*U0),cx=OX+(W/2-OX)*ZM,cy=OY+(ty-OY)*ZM;
-  g.globalCompositeOperation='source-over';g.globalAlpha=a;g.save();g.translate(cx,cy);g.scale(s*ZM*c,s*ZM*Math.max(.35,Math.cos(PIT)));
-  g.drawImage(tc,-tw/2,-th/2,tw,th);g.restore();g.globalAlpha=1}
+function text(t){
+  const a=sm((t-1.5)/1);if(a<=0)return;
+  const s=1+.03*Math.sin(t*3); // Vẫn giữ nhịp thở (to nhỏ nhẹ) của chữ
+  const ty=Math.min(OY+2.6*U0,H-1.15*U0);
+  
+  // Tính toán vị trí gốc
+  let cx=OX+(W/2-OX)*ZM;
+  let cy=OY+(ty-OY)*ZM;
+  
+  // THÊM CHUYỂN ĐỘNG NHẸ TƯƠNG TÁC (Parallax effect)
+  // Chữ sẽ trôi nhẹ sang trái/phải, lên/xuống theo góc quay thay vì bị lật
+  cx += Math.sin(YAW) * (U0 * 0.4); 
+  cy -= Math.sin(PIT) * (U0 * 0.4);
+
+  g.globalCompositeOperation='source-over';g.globalAlpha=a;g.save();g.translate(cx,cy);
+  
+  // Bỏ tính toán YAW và PIT ở scale, chữ sẽ không bao giờ bị lật úp nữa
+  g.scale(s*ZM, s*ZM);
+  
+  g.drawImage(tc,-tw/2,-th/2,tw,th);g.restore();g.globalAlpha=1;
+}
 
 /* ---------- mạng nhện trái tim + tương tác chạm/chuột ---------- */
 let mx=-1e3,my=-1e3,sx=-1e3,sy=-1e3,hov=false,aid=null;
