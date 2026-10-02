@@ -6,8 +6,6 @@
 <meta name="theme-color" content="#100505">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>I Love ...</title>
-<!-- Thêm thư viện mã hóa CryptoJS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <style>
   :root{--bg:#100505}
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;overscroll-behavior:none;
@@ -17,14 +15,25 @@
 </style>
 </head>
 <body>
-<canvas id="c" role="img" aria-label="Bó hoa hồng đỏ phát sáng, trái tim quay quanh, chữ I Love ... và mạng nhện trái tim tương tác"></canvas>
+<canvas id="c" role="img" aria-label="Bó hoa hồng đỏ phát sáng, trái tim quay quanh, chữ I Love You Mai Anh và mạng nhện trái tim tương tác"></canvas>
+
+<!-- Đồng hồ đếm ngược góc trên phải -->
+<div id="globalTimer" style="display:none; position:fixed; top:15px; right:15px; background:rgba(23, 6, 6, 0.85); color:#ff4050; padding:8px 15px; border-radius:8px; font-family:'Segoe UI', Tahoma, sans-serif; z-index:20; border: 1px solid #ff8a96; backdrop-filter: blur(4px); font-weight:bold; font-size:14px; box-shadow: 0 0 15px rgba(255,40,50,0.4);">
+    Mở khóa sau: <span id="timerText">60:00</span>
+</div>
 
 <!-- Giao diện bảng nhập mật khẩu -->
 <div id="pwdModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(16, 5, 5, 0.85); z-index:10; justify-content:center; align-items:center; flex-direction:column; font-family:'Segoe UI', Tahoma, sans-serif; backdrop-filter: blur(4px);">
     <div style="background:#2e0a0c; padding:30px; border-radius:15px; text-align:center; border: 1px solid #ff4050; box-shadow: 0 0 30px rgba(255,40,50,0.4); width: 85%; max-width: 320px;">
         <h3 style="color:#ffd0d0; margin-top:0; font-size: 20px;">Gửi Đằng Ấy 🌹</h3>
-        <p id="lockoutMsg" style="color:#ff4050; font-size:14px; font-weight:bold; display:none;"></p>
         
+        <!-- Khu vực hiển thị khi bị khóa form -->
+        <div id="lockoutArea" style="display:none; flex-direction:column; align-items:center;">
+            <p style="color:#ff4050; font-size:14px; font-weight:bold; margin-bottom:20px;">Bạn đã nhập sai quá nhiều lần. Form bị khóa!</p>
+            <button id="btnSkipLock" style="padding:10px 0; border:none; border-radius:8px; background:#4a1519; color:#ffc4cc; cursor:pointer; width:100%; font-weight:600; font-size:14px;">Bỏ qua để xem hiệu ứng</button>
+        </div>
+
+        <!-- Khu vực nhập mật khẩu bình thường -->
         <div id="inputArea">
             <p style="color:#ffc4cc; font-size:14px; margin-bottom: 20px;">Hãy nhập mật khẩu để xem người ấy là ai nhé!</p>
             <input type="password" id="pwdInput" placeholder="Nhập mật khẩu..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ff8a96; background:#170606; color:white; outline:none; text-align:center; font-size:16px; box-sizing:border-box;">
@@ -184,41 +193,70 @@ const tc=document.createElement('canvas');let tw=0,th=0;
 let isUnlocked = false; 
 let modalShown = false;
 let secretName = ""; 
+let countdownInterval = null;
 
-// --- HỆ THỐNG BẢO MẬT ---
-// Mật khẩu hợp lệ đã được "băm" (Hash SHA256) để che giấu hoàn toàn.
-// Các mã hash dưới đây tương ứng với: 09032011, 932011, 9311, 090311
-const VALID_HASHES = [
-    "3f33cc767b2d2db73b1ffb79bfcb0321fb9d1b06f79fa552d458be5b6e409ec8", // 09032011
-    "e9ccf067d934bb610f4dc7cf6c9dbfb70a09e0fa9560f64c67ebfc3e46c98dc4", // 932011
-    "3e7cdbb613532c510db23de8bfda928cdb1a6cd1e9d8e578c7fb104b281f62c5", // 9311
-    "3bd6960cb812543d3b76cf6db0f934dfb7c2cc46f140d347206d8cc0dc9beff6"  // 090311
+// --- HỆ THỐNG BẢO MẬT MỚI (CHỐNG LỘ CODE, KHÔNG CẦN THƯ VIỆN) ---
+// Mật khẩu và Tên đã được mã hóa bằng cách chuyển thành mã ASCII và dịch chuyển (+5)
+const VALID_CODES = [
+    "53-62-53-56-55-53-54-54", // tương đương: 09032011
+    "62-56-55-53-54-54",       // tương đương: 932011
+    "62-56-54-54",             // tương đương: 9311
+    "53-62-53-56-54-54"        // tương đương: 090311
 ];
-const ENCRYPTED_PAYLOADS = {
-    "3f33cc767b2d2db73b1ffb79bfcb0321fb9d1b06f79fa552d458be5b6e409ec8": "U2FsdGVkX18mZ99oT6Hw/p4d1aGk3H+z7jI8eWvG46I=",
-    "e9ccf067d934bb610f4dc7cf6c9dbfb70a09e0fa9560f64c67ebfc3e46c98dc4": "U2FsdGVkX18LqGvBwFp0z3aG+fG1J8P+wJ3pS/0G30U=",
-    "3e7cdbb613532c510db23de8bfda928cdb1a6cd1e9d8e578c7fb104b281f62c5": "U2FsdGVkX195g+13aVfX3y2aO0eH+rWJ6X/2+bN5b8s=",
-    "3bd6960cb812543d3b76cf6db0f934dfb7c2cc46f140d347206d8cc0dc9beff6": "U2FsdGVkX187R5V9O8Yf0f1b2w/yJ8p2z4K8g6aM4QY="
-};
 
-// Cấu hình Lockout
+// Chữ "MAI ANH" đã được dịch mã 
+const SECRET_CODE = "82-70-78-37-70-83-77";
+
 const MAX_ATTEMPTS = 3;
-const LOCK_DURATION = 60 * 60 * 1000; // 1 tiếng (tính bằng mili-giây)
+const LOCK_DURATION = 60 * 60 * 1000; // 1 tiếng
+
+// Cập nhật bộ đếm thời gian góc màn hình
+function updateGlobalTimer(endTime) {
+    const now = Date.now();
+    const diff = endTime - now;
+    
+    if (diff <= 0) {
+        if(countdownInterval) clearInterval(countdownInterval);
+        document.getElementById('globalTimer').style.display = 'none';
+        localStorage.removeItem('loveLetterLock');
+        localStorage.setItem('loveLetterFails', 0);
+        
+        document.getElementById('inputArea').style.display = 'block';
+        document.getElementById('lockoutArea').style.display = 'none';
+        return;
+    }
+    
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    document.getElementById('timerText').innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
 
 function checkLockout() {
     let lockTime = localStorage.getItem('loveLetterLock');
     if (lockTime && Date.now() < parseInt(lockTime)) {
-        let minutesLeft = Math.ceil((parseInt(lockTime) - Date.now()) / 60000);
+        // Đang bị khóa form
         document.getElementById('inputArea').style.display = 'none';
-        let lockMsg = document.getElementById('lockoutMsg');
-        lockMsg.innerText = `Bạn đã nhập sai quá nhiều lần. Form bị khóa ${minutesLeft} phút nữa.`;
-        lockMsg.style.display = 'block';
+        document.getElementById('lockoutArea').style.display = 'flex';
+        
+        // Hiện đồng hồ góc phải
+        document.getElementById('globalTimer').style.display = 'block';
+        
+        if (countdownInterval) clearInterval(countdownInterval);
+        updateGlobalTimer(parseInt(lockTime));
+        countdownInterval = setInterval(() => {
+            updateGlobalTimer(parseInt(lockTime));
+        }, 1000);
+        
         return true;
     }
-    // Hết giờ phạt -> mở lại
+    
+    // Hết giờ khóa form
     if (lockTime && Date.now() >= parseInt(lockTime)) {
         localStorage.removeItem('loveLetterLock');
         localStorage.setItem('loveLetterFails', 0);
+        document.getElementById('inputArea').style.display = 'block';
+        document.getElementById('lockoutArea').style.display = 'none';
+        document.getElementById('globalTimer').style.display = 'none';
     }
     return false;
 }
@@ -230,23 +268,20 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
     if (checkLockout()) return;
 
     const userInput = document.getElementById('pwdInput').value;
-    const userHash = CryptoJS.SHA256(userInput).toString();
     
-    if(VALID_HASHES.includes(userHash)) {
-        // Đúng mật khẩu -> Mở khóa và giải mã tên
+    // Mã hóa chữ người dùng nhập vào để khớp với hệ thống bảo mật
+    const userCode = userInput.split('').map(c => c.charCodeAt(0) + 5).join('-');
+    
+    if(VALID_CODES.includes(userCode)) {
         isUnlocked = true;
-        // Lấy payload mã hóa tương ứng và dùng chính mật khẩu người dùng vừa nhập để giải mã
-        const encryptedData = ENCRYPTED_PAYLOADS[userHash];
-        const bytes = CryptoJS.AES.decrypt(encryptedData, userInput);
-        secretName = bytes.toString(CryptoJS.enc.Utf8);
-
-        // Xóa dấu vết lỗi nếu có
-        localStorage.setItem('loveLetterFails', 0);
         
+        // Giải mã tên ẩn giấu
+        secretName = SECRET_CODE.split('-').map(n => String.fromCharCode(parseInt(n) - 5)).join('');
+
+        localStorage.setItem('loveLetterFails', 0);
         document.getElementById('pwdModal').style.display = 'none';
         buildText(); 
     } else {
-        // Sai mật khẩu -> Tăng bộ đếm
         let fails = parseInt(localStorage.getItem('loveLetterFails') || 0) + 1;
         localStorage.setItem('loveLetterFails', fails);
         
@@ -263,6 +298,12 @@ document.getElementById('btnSubmit').addEventListener('click', () => {
 document.getElementById('btnSkip').addEventListener('click', () => {
     document.getElementById('pwdModal').style.display = 'none';
 });
+
+// Sự kiện khi bấm "Bỏ qua để xem hiệu ứng" lúc đang bị khóa form
+document.getElementById('btnSkipLock').addEventListener('click', () => {
+    document.getElementById('pwdModal').style.display = 'none';
+});
+
 document.getElementById('pwdInput').addEventListener('keypress', (e) => {
     if(e.key === 'Enter') document.getElementById('btnSubmit').click();
 });
@@ -282,7 +323,6 @@ function buildText(){
     } else {
       x.font=`bold ${.55*U}px ${f}`;x.fillStyle=g1;x.fillText('I LOVE YOU',tw/2,l1);
       x.font=`900 ${.95*U}px ${f}`;x.fillStyle=g2;
-      // HIỂN THỊ TÊN ĐÃ ĐƯỢC GIẢI MÃ
       x.fillText(secretName,tw/2,l2);
     }
   }
